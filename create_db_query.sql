@@ -87,3 +87,10 @@ ALTER TABLE `Workspace_Monitors` ADD CONSTRAINT `Workspace_Monitors_fk0` FOREIGN
 ALTER TABLE `Workspace_Monitors` ADD CONSTRAINT `Workspace_Monitors_fk1` FOREIGN KEY (`Monitor_id`) REFERENCES `Monitor`(`id`) ON UPDATE CASCADE;
 
 ALTER TABLE `Workspace_PCs` ADD CONSTRAINT `Workspace_PCs_fk0` FOREIGN KEY (`Workspace_id`) REFERENCES `Workspace`(`id`) ON UPDATE CASCADE;
+
+ALTER TABLE `Workspace_PCs` ADD CONSTRAINT `Workspace_PCs_fk1` FOREIGN KEY (`PC_id`) REFERENCES `PC`(`id`) ON UPDATE CASCADE;
+
+ALTER TABLE `Workspace_Headphones` ADD CONSTRAINT `Workspace_Headphones_fk0` FOREIGN KEY (`Workspace_id`) REFERENCES `Workspace`(`id`) ON UPDATE CASCADE;
+
+ALTER TABLE `Workspace_Headphones` ADD CONSTRAINT `Workspace_Headphones_fk1` FOREIGN KEY (`Headphone_id`) REFERENCES `Headphone`(`id`) ON UPDATE CASCADE;
+
