@@ -7,9 +7,10 @@ class Table
 	private $dbpass = '';
 	private $dbname = 'ufanet_work';
 
-	protected $name = '';
-	protected $links = [];
+	protected $name   = '';
+	protected $links  = [];
 	protected $except = [];
+	protected $merge  = [];
 	protected $dbconn = null;
 
 	function __construct()
@@ -83,10 +84,9 @@ class Table
 				$result = $this->dbconn->query($sql);
 				$tmpmain = $result->fetchAll(PDO::FETCH_ASSOC);
 
-				// $tmpmain = $this->removeExcept($tmpmain);
+				$tmpmain = $this->removeExcept($tmpmain);
+				$tmpmain = $this->mergeArray($tmpmain, $this->merge);
 
-				// $array[0] = $this->mergeArray($array[0], $array[1]);
-				// unset($array[1]);
 				$array[] = $tmpmain;
 			}
 			return $array;
@@ -109,7 +109,7 @@ class Table
 			$result = $this->dbconn->query($sql);
 			$array = $result->fetchAll(PDO::FETCH_ASSOC);
 
-			// $array = $this->removeExcept($array);
+			$array = $this->removeExcept($array);
 
 			return $array;
 		}
@@ -145,33 +145,27 @@ class Table
 		return $array;
 	}
 
-	private function arrayDifferenses($array1, $array2)
-	{		
-		$count = 0;
-		if (count($array1) == count($array2)){
-			foreach ($array1 as $key => $value) {
-				if ($array1[$key] != $array2[$key]){
-					$count += 1;
-				}
-			}
-		}
-		return $count;
-	}
-
-	private function arrayMerge($array1, $array2)
+	private function mergeArray($array, $merged)
 	{
-		$merged = [];
-		if (count($array1) == count($array2)){
-			foreach ($array1 as $key => $value) {
-				if ($array1[$key] == $array2[$key]){
-					$merged[$key] = $array1[$key];
+		if (count($merged) > 0){
+			foreach ($merged as $mergedkey => $mergedvalue) {
+				$tmpmerged = [];
+				foreach ($array as $arrkey => $innerarr) {
+					foreach ($innerarr as $innerkey => $innerval) {
+						if ($mergedvalue == $innerkey){
+							$tmpmerged[] = $innerval;
+						}
+					}
 				}
-				else{
-					$merged[$key] = [$array1[$key], $array2[$key]];
+				if (count($tmpmerged) > 0){
+					$array[0][$mergedvalue] = $tmpmerged;
 				}
 			}
+			for ($i = 1; $i < count($array[0]); $i++) { 
+				unset($array[$i]);
+			}
 		}
-		return $merged;
+		return $array;
 	}
 }
 
