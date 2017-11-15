@@ -38,55 +38,57 @@ class Table
 	{
 		if (count($this->links) > 0)
 		{
-			require '../src/classes/SQL_Query_Linked_Tables.php';
-			$key = array_keys($this->links)[0];
-			$sql = str_replace("{db_name}", $this->dbname, $sql);
-			$sql .= " AND `TABLE_NAME` = '$key'";
-			$result = $this->dbconn->query($sql);
-			$array = $result->fetchAll(PDO::FETCH_ASSOC);
-
-			$tables = array_keys_to_values($this->links);
-			$variables = '';
-			foreach ($tables as $tablekey => $table) {
-				$result = $this->dbconn->query("DESCRIBE $table");
-				$arr = $result->fetchAll(PDO::FETCH_ASSOC);
-				foreach ($arr as $arrkey => $tmparr) {
-					foreach ($tmparr as $tmparraykey => $value) {
-						if ($tmparraykey == 'Field'){
-							$variables .= "$table.$value AS '$table.$value', ";
+			$array = [];
+			foreach ($this->links as $key => $links) {
+				require '../src/classes/SQL_Query_Linked_Tables.php';
+				$sql = str_replace("{db_name}", $this->dbname, $sql);
+				$sql .= " AND `TABLE_NAME` = '$key'";
+				$result = $this->dbconn->query($sql);
+				$linkedtables = $result->fetchAll(PDO::FETCH_ASSOC);
+				$tmpmain = [];
+	
+				$tables = [];			
+				$tables[] = $key;
+				foreach ($links as $v) {
+					$tables[] = $v;
+				}
+				$variables = '';
+				foreach ($tables as $tablekey => $table) {
+					$result = $this->dbconn->query("DESCRIBE $table");
+					$arr = $result->fetchAll(PDO::FETCH_ASSOC);
+					foreach ($arr as $arrkey => $tmparr) {
+						foreach ($tmparr as $tmparrkey => $value) {
+							if ($tmparrkey == 'Field'){
+								$variables .= "$table.$value AS '$table.$value', ";
+							}
 						}
 					}
 				}
-			}
-			$variables = rtrim($variables, ', ');
+				$variables = rtrim($variables, ', ');
 
-			$tablejoin = '';
-			foreach ($this->links as $k => $value) {
-				$tablejoin .= $key.' ';
-				foreach ($value as $k => $val) {
-					$tablejoin .= 'INNER JOIN '.$val.' ';
+				$tablejoin = $key.' ';
+				foreach ($links as $value) {
+					$tablejoin .= 'INNER JOIN '.$value.' ';
 				}
-			}
 
-			$tablelink = '';
-			foreach ($array as $k => $value) {
-				$tablelink .= $value['TABLE_NAME'].'.'.$value['COLUMN_NAME'].' = '
-						.$value['REFERENCED_TABLE_NAME'].'.'.$value['REFERENCED_COLUMN_NAME'];
-				if ($k != (count($array) - 1)){
-					$tablelink .= ' AND ';
+				$tablelink = '';
+				foreach ($linkedtables as $k => $value) {
+					$tablelink .= $value['TABLE_NAME'].'.'.$value['COLUMN_NAME'].' = '.$value['REFERENCED_TABLE_NAME'].'.'.$value['REFERENCED_COLUMN_NAME'];
+					if ($k != (count($linkedtables) - 1)){
+						$tablelink .= ' AND ';
+					}
 				}
+
+				$sql = "SELECT $variables FROM $tablejoin ON $tablelink";
+				$result = $this->dbconn->query($sql);
+				$tmpmain = $result->fetchAll(PDO::FETCH_ASSOC);
+
+				// $tmpmain = $this->removeExcept($tmpmain);
+
+				// $array[0] = $this->mergeArray($array[0], $array[1]);
+				// unset($array[1]);
+				$array[] = $tmpmain;
 			}
-
-			$sql = "SELECT $variables FROM $tablejoin ON $tablelink";
-
-			$result = $this->dbconn->query($sql);
-			$array = $result->fetchAll(PDO::FETCH_ASSOC);
-
-			$array = $this->removeExcept($array);
-
-			$array[0] = $this->mergeArray($array[0], $array[1]);
-			unset($array[1]);
-			
 			return $array;
 		}
 		else
@@ -142,7 +144,21 @@ class Table
 
 		return $array;
 	}
-	private function mergeArray($array1, $array2)
+
+	private function arrayDifferenses($array1, $array2)
+	{		
+		$count = 0;
+		if (count($array1) == count($array2)){
+			foreach ($array1 as $key => $value) {
+				if ($array1[$key] != $array2[$key]){
+					$count += 1;
+				}
+			}
+		}
+		return $count;
+	}
+
+	private function arrayMerge($array1, $array2)
 	{
 		$merged = [];
 		if (count($array1) == count($array2)){
