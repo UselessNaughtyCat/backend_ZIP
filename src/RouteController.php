@@ -16,10 +16,18 @@ $app->get('/{className}/{id}', function (Request $request, Response $response) {
     echo "</pre>";
 });
 
-// $app->post('/{className}/add', function (Request $request, Response $response) {
-//     $className = $request->getAttribute('className');
-//     require '../src/classes/'.$className.'.php';
-//     $pendos = new $className();
-//     $pendos->Connect();
-//     echo $pendos->GetSomeString();
-// });
+$app->post('/{className}/add', function (Request $request, Response $response) {
+});
+
+$app->put('/{className}/update/{id}', function (Request $request, Response $response) {
+	$className = $request->getAttribute('className');
+	$id = $request->getAttribute('id');
+	require '../src/classes/'.$className.'.php';
+
+	$currentTable = new $className();
+	$currentTable->update($id, $request->getParsedBody());
+});
+
+$app->delete('/{className}/delete', function (Request $request, Response $response) {
+	print_r($request->getParsedBody());
+});

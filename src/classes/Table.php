@@ -122,7 +122,19 @@ class Table
 
 	public function update($id, $values)
 	{
-
+		$result = $this->dbconn->query("DESCRIBE $this->name");
+		$result = $result->fetchAll(PDO::FETCH_ASSOC);
+		$sql = "UPDATE $this->name SET ";
+		for ($i = 1; $i < count($result); $i++){
+			foreach ($result[$i] as $key => $field) {
+				if ($key == 'Field'){
+					$sql .= $field . " = " . "'" . $values[$field]. "',";
+				}
+			}
+		}
+		$sql = rtrim($sql, ', ');
+		$sql .= " WHERE id = " . $id;
+		$this->dbconn->query($sql);
 	}
 
 	public function insert($id, $values)
