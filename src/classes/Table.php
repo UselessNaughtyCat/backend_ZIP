@@ -74,13 +74,20 @@ class Table
 
 				$tablelink = '';
 				foreach ($linkedtables as $k => $value) {
-					$tablelink .= $value['TABLE_NAME'].'.'.$value['COLUMN_NAME'].' = '.$value['REFERENCED_TABLE_NAME'].'.'.$value['REFERENCED_COLUMN_NAME'];
-					if ($k != (count($linkedtables) - 1)){
-						$tablelink .= ' AND ';
-					}
+					$tablelink .= $value['TABLE_NAME'].'.'.
+								  $value['COLUMN_NAME'].' = '.
+								  $value['REFERENCED_TABLE_NAME'].'.'.
+								  $value['REFERENCED_COLUMN_NAME'].' AND ';
+					// if ($k != (count($linkedtables) - 1)){
+						// $tablelink .= ' AND ';
+					// }
 				}
 
+				$tablelink .= $this->name.'.id = '.$id;
+
 				$sql = "SELECT $variables FROM $tablejoin ON $tablelink";
+				// echo $sql.'<br>';
+				// return $sql;
 				$result = $this->dbconn->query($sql);
 				$tmpmain = $result->fetchAll(PDO::FETCH_ASSOC);
 
