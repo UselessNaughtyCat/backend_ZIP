@@ -18,15 +18,17 @@ $app->get('/{className}/{id}', function (Request $request, Response $response) {
 
 $app->post('/{className}/add', function (Request $request, Response $response) {
 	$className = $request->getAttribute('className');
+
 	require '../src/classes/'.$className.'.php';
 
 	$currentTable = new $className();
-	$currentTable->add($request->getParsedBody());
+	$currentTable->insert($request->getParsedBody());
 });
 
 $app->put('/{className}/update/{id}', function (Request $request, Response $response) {
 	$className = $request->getAttribute('className');
-	$id = $request->getAttribute('id');
+	$id 	   = $request->getAttribute('id');
+
 	require '../src/classes/'.$className.'.php';
 
 	$currentTable = new $className();
@@ -35,7 +37,8 @@ $app->put('/{className}/update/{id}', function (Request $request, Response $resp
 
 $app->delete('/{className}/delete/{id}', function (Request $request, Response $response) {
 	$className = $request->getAttribute('className');
-	$id = $request->getAttribute('id');
+	$id 	   = $request->getAttribute('id');
+
 	require '../src/classes/'.$className.'.php';
 
 	$currentTable = new $className();

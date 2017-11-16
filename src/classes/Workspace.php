@@ -24,5 +24,16 @@ class Workspace extends Table
 		'Headphone.id',
 		'Headphone.name',
 		'Headphone.comment',
+		'PC.id',
+		'PC.HDD',
+		'PC.RAM',
+		'PC.processor',
+		'PC.domain_name',
+		'PC.comment',
+		'PC.MAC',
+		'Monitor.id',
+		'Monitor.diagonal',
+		'Monitor.name',
+		'Monitor.comment',
 	];
 }

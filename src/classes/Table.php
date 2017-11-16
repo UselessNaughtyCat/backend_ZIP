@@ -115,30 +115,7 @@ class Table
 		}
 	}
 
-	public function update($id, $values)
-	{
-		// нужно будет чекать обновляются ли выходы, если да,
-		// то, вместе с девайсом обновляем и выходы
-
-		$fields_of_table = $this->dbconn->query("DESCRIBE $this->name");
-		$fields_of_table = $fields_of_table->fetchAll(PDO::FETCH_ASSOC);
-
-		$sql = "UPDATE $this->name SET ";
-		for ($i = 1; $i < count($fields_of_table); $i++){
-			foreach ($fields_of_table[$i] as $key => $field) {
-				if ($key == 'Field'){
-					$sql .= $field . " = " . "'" . $values[$field]. "',";
-				}
-			}
-		}
-
-		$sql = rtrim($sql, ', ');
-		$sql .= " WHERE id = " . $id;
-		$this->dbconn->query($sql);
-
-	}
-
-	public function add($values)
+	public function insert($values)
 	{
 		// когда будем добавлять пк или мон, нужно будет по дефолту
 		// добавлять в таблицы workspace и output. И проверка на headphon
@@ -161,6 +138,29 @@ class Table
 		$sql = rtrim($sql, ', ') . ")";
 
 		$this->dbconn->query($sql);
+	}
+
+	public function update($id, $values)
+	{
+		// нужно будет чекать обновляются ли выходы, если да,
+		// то, вместе с девайсом обновляем и выходы
+
+		$fields_of_table = $this->dbconn->query("DESCRIBE $this->name");
+		$fields_of_table = $fields_of_table->fetchAll(PDO::FETCH_ASSOC);
+
+		$sql = "UPDATE $this->name SET ";
+		for ($i = 1; $i < count($fields_of_table); $i++){
+			foreach ($fields_of_table[$i] as $key => $field) {
+				if ($key == 'Field'){
+					$sql .= $field . " = " . "'" . $values[$field]. "',";
+				}
+			}
+		}
+
+		$sql = rtrim($sql, ', ');
+		$sql .= " WHERE id = " . $id;
+		$this->dbconn->query($sql);
+
 	}
 
 	public function delete($id)
