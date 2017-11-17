@@ -2,14 +2,14 @@
 use \Psr\Http\Message\ServerRequestInterface as Request;
 use \Psr\Http\Message\ResponseInterface as Response;
 
-$app->get('/{className}/{id}', function (Request $request, Response $response) {
+$app->get('/{className}[/[{id}]]', function (Request $request, Response $response) {
     $className = $request->getAttribute('className');
-    $id 	   = $request->getAttribute('id');
+    $id 	   = $request->getAttribute('id') ? $request->getAttribute('id') : null;
 
     require '../src/classes/'.$className.'.php';
 
     $currentTable = new $className();
-    $array = $currentTable->select($id);
+    $array = $id != null ? $currentTable->select($id) : $currentTable->selectAll();
     
     echo "<pre>";
     print_r($array);

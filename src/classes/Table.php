@@ -31,8 +31,18 @@ class Table
 	}
 	
 	public function selectAll()
-	{
+	{			
+		$sql = "SELECT id FROM $this->name";
+		$result = $this->dbconn->query($sql);
+		$id = $result->fetchAll(PDO::FETCH_NUM);
 
+	    $array = [];
+	    for ($i=0; $i < count($id); $i++) { 
+	    	$tmpid = $id[$i][0];
+			$array[] = $this->select($tmpid);
+	    }	    
+	    
+	    return $array;
 	}
 
 	public function select($id)
@@ -78,9 +88,6 @@ class Table
 								  $value['COLUMN_NAME'].' = '.
 								  $value['REFERENCED_TABLE_NAME'].'.'.
 								  $value['REFERENCED_COLUMN_NAME'].' AND ';
-					// if ($k != (count($linkedtables) - 1)){
-						// $tablelink .= ' AND ';
-					// }
 				}
 
 				$tablelink .= $this->name.'.id = '.$id;
@@ -96,7 +103,14 @@ class Table
 
 				$array[] = $tmpmain;
 			}
-			return $array;
+			// echo count($array).'<br>';
+			// echo count($array[0]).'<br>';
+			if ((count($array) == 1) && (count($array[0]) == 1)){
+				return $array[0];
+			}
+			else{
+				return $array;
+			}
 		}
 		else
 		{			
