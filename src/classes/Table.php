@@ -173,7 +173,7 @@ class Table
 
 				$sql = "INSERT INTO $key ($fields) VALUES ($values)";
 				echo $sql."\n";
-				$this->dbconn->query($sql);
+				//$this->dbconn->query($sql);
 			}
 			else{
 				for ($a = 0; $a < count($arr); $a++) { 
@@ -198,7 +198,7 @@ class Table
 
 					$sql = "INSERT INTO $key ($fields) VALUES ($values)";
 					echo $sql."\n";
-					$this->dbconn->query($sql);
+					//$this->dbconn->query($sql);
 				}
 			}
 		}
@@ -206,25 +206,51 @@ class Table
 
 	public function update($id, $values)
 	{
-		// нужно будет чекать обновляются ли выходы, если да,
-		// то, вместе с девайсом обновляем и выходы
+		foreach ($values as $key => $value) {
+			$arr = $value;
 
-		$fields_of_table = $this->dbconn->query("DESCRIBE $this->name");
-		$fields_of_table = $fields_of_table->fetchAll(PDO::FETCH_ASSOC);
+			$avaliable_fields = $this->dbconn->query("DESCRIBE $key");
+			$avaliable_fields = $avaliable_fields->fetchAll(PDO::FETCH_ASSOC);
 
-		$sql = "UPDATE $this->name SET ";
-		for ($i = 1; $i < count($fields_of_table); $i++){
-			foreach ($fields_of_table[$i] as $key => $field) {
-				if ($key == 'Field'){
-					$sql .= $field . " = " . "'" . $values[$field]. "',";
+			if (isAssoc($arr)){
+
+				$sql = "UPDATE $key SET ";
+				for($i = 1; $i < count($avaliable_fields); $i++){
+					foreach ($avaliable_fields[$i] as $k => $v) {
+						if ($k == 'Field'){
+							$sql .= $v ." = '". $arr[$v] ."', ";
+						}
+					}
+				}
+				
+				$sql = rtrim($sql, ', ') . " WHERE id = $id";
+
+				//echo $sql."\n";
+				$this->dbconn->query($sql);
+			}
+			else{
+				$ids = $this->dbconn->query("SELECT id FROM $key WHERE $this->name"."_id = $id");
+				$ids = $ids->fetchAll(PDO::FETCH_NUM);
+
+				for ($a = 0; $a < count($arr); $a++) {
+
+
+					$sql = "UPDATE $key SET ";
+
+					for ($i = 2; $i < count($avaliable_fields); $i++){
+						foreach ($avaliable_fields[$i] as $k => $field) {
+							if ($k == 'Field'){
+								$sql .= $field ." = '". $arr[$a] ."', ";
+							}
+						}
+					}
+					$sql = rtrim($sql, ', ') . " WHERE id = ".$ids[$a][0];
+
+					//echo $sql."\r";
+					$this->dbconn->query($sql);
 				}
 			}
 		}
-
-		$sql = rtrim($sql, ', ');
-		$sql .= " WHERE id = " . $id;
-		$this->dbconn->query($sql);
-
 	}
 
 	public function delete($id)
