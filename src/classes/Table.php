@@ -103,12 +103,14 @@ class Table
 
 				$array[] = $tmpmain;
 			}
-			// echo count($array).'<br>';
-			// echo count($array[0]).'<br>';
-			if ((count($array) == 1) && (count($array[0]) == 1)){
-				return $array[0];
+
+			if (count($array) == 1){
+				return $array[0][0];
 			}
 			else{
+				for ($i = 0; $i < count($array); $i++) { 
+					$array[$i] = $array[$i][0];
+				}
 				return $array;
 			}
 		}
@@ -132,33 +134,74 @@ class Table
 
 			$array = $this->removeExcept($array);
 
-			return $array;
+			return $array[0];
 		}
+	}
+
+	public function Translate($array)
+	{
+		
 	}
 
 	public function insert($values)
 	{
-		// когда будем добавлять пк или мон, нужно будет по дефолту
-		// добавлять в таблицы workspace и output. И проверка на headphon
+		foreach ($values as $key => $value) {
+			$arr = $value;
+			if (isAssoc($arr)){
+				$avaliable_fields = $this->dbconn->query("DESCRIBE $key");
+				$avaliable_fields = $avaliable_fields->fetchAll(PDO::FETCH_ASSOC);
 
-		$fields_of_table = $this->dbconn->query("DESCRIBE $this->name");
-		$fields_of_table = $fields_of_table->fetchAll(PDO::FETCH_ASSOC);
+				$fields = '';
+				for ($i = 0; $i < count($avaliable_fields); $i++){
+					foreach ($avaliable_fields[$i] as $k => $v) {
+						if ($k == 'Field'){
+							$fields .= $v.', ';
+						}
+					}
+				}
+				$fields = rtrim($fields, ', ');
 
-		$sql = "INSERT INTO $this->name VALUES (";
-		for ($i = 0; $i < count($fields_of_table); $i++){
-			foreach ($fields_of_table[$i] as $key => $field) {
-				if ($key == 'Field'){
-					if ($i == 0)
-						$sql .= "Null,";
-					else
-						$sql .= "'" . $values[$field]. "',";
+				$values = '';
+				for ($i = 0; $i < count($avaliable_fields); $i++){
+					foreach ($avaliable_fields[$i] as $k => $v) {
+						if ($k == 'Field'){
+							$values .= $arr[$v] !== '' ? "'".$arr[$v]."', " : 'null, ';
+						}
+					}
+				}
+				$values = rtrim($values, ', ');
+
+				$sql = "INSERT INTO $key ($fields) VALUES ($values)";
+				echo $sql."\n";
+				$this->dbconn->query($sql);
+			}
+			else{
+				for ($a = 0; $a < count($arr); $a++) { 
+					$max_id = $this->dbconn->query("SELECT MAX(id) FROM $this->name");
+					$max_id = $max_id->fetchAll(PDO::FETCH_NUM)[0][0];
+					// echo $this->name."\n".$max_id."\n";
+
+					$avaliable_fields = $this->dbconn->query("DESCRIBE $key");
+					$avaliable_fields = $avaliable_fields->fetchAll(PDO::FETCH_ASSOC);
+
+					$fields = '';
+					for ($i = 0; $i < count($avaliable_fields); $i++){
+						foreach ($avaliable_fields[$i] as $k => $v) {
+							if ($k == 'Field'){
+								$fields .= $v.', ';
+							}
+						}
+					}
+					$fields = rtrim($fields, ', ');
+
+					$values = "null, $max_id, ".$arr[$a];
+
+					$sql = "INSERT INTO $key ($fields) VALUES ($values)";
+					echo $sql."\n";
+					$this->dbconn->query($sql);
 				}
 			}
 		}
-
-		$sql = rtrim($sql, ', ') . ")";
-
-		$this->dbconn->query($sql);
 	}
 
 	public function update($id, $values)
@@ -244,4 +287,9 @@ function array_keys_to_values($array)
 		}
 	}
 	return $new;
+}
+function isAssoc(array $arr)
+{
+    if (array() === $arr) return false;
+    return array_keys($arr) !== range(0, count($arr) - 1);
 }
