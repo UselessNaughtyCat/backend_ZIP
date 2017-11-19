@@ -140,7 +140,23 @@ class Table
 
 	public function Translate($array)
 	{
+		$strkey = '';
+		$new = [];
+		foreach ($array as $key => $value) {
+			$tmpkey = explode('.', $key)[0];
+			$tmpfiled = explode('.', $key)[1];
+			if ($strkey !== $tmpkey){
+				$strkey = $tmpkey;
+			}
+			if (!(is_array($value))){
+				$new[$strkey][$tmpfiled] = $value;
+			}
+			else{
+				$new[$strkey] = $value;
+			}
+		}
 		
+		return $new;
 	}
 
 	public function insert($values)
@@ -173,7 +189,7 @@ class Table
 
 				$sql = "INSERT INTO $key ($fields) VALUES ($values)";
 				echo $sql."\n";
-				//$this->dbconn->query($sql);
+				$this->dbconn->query($sql);
 			}
 			else{
 				for ($a = 0; $a < count($arr); $a++) { 
@@ -198,7 +214,7 @@ class Table
 
 					$sql = "INSERT INTO $key ($fields) VALUES ($values)";
 					echo $sql."\n";
-					//$this->dbconn->query($sql);
+					$this->dbconn->query($sql);
 				}
 			}
 		}
@@ -232,21 +248,26 @@ class Table
 				$ids = $this->dbconn->query("SELECT id FROM $key WHERE $this->name"."_id = $id");
 				$ids = $ids->fetchAll(PDO::FETCH_NUM);
 
+				for($i = 0; $i < count($ids); $i++){
+					$this->dbconn->query("DELETE FROM $key WHERE id = ".$ids[$i][0]);
+					//echo "DELETE FROM $key WHERE id = ".$ids[$i][0]."\r";
+				}
+
 				for ($a = 0; $a < count($arr); $a++) {
-
-
-					$sql = "UPDATE $key SET ";
-
-					for ($i = 2; $i < count($avaliable_fields); $i++){
-						foreach ($avaliable_fields[$i] as $k => $field) {
+					$fields = '';
+					for ($i = 0; $i < count($avaliable_fields); $i++){
+						foreach ($avaliable_fields[$i] as $k => $v) {
 							if ($k == 'Field'){
-								$sql .= $field ." = '". $arr[$a] ."', ";
+							$fields .= $v.', ';
 							}
 						}
 					}
-					$sql = rtrim($sql, ', ') . " WHERE id = ".$ids[$a][0];
+					$fields = rtrim($fields, ', ');
+					$values = "null, $id, ".$arr[$a];
 
-					//echo $sql."\r";
+					$sql = "INSERT INTO $key ($fields) VALUES ($values)";
+					//echo $sql."\n";
+
 					$this->dbconn->query($sql);
 				}
 			}
