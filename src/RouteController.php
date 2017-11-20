@@ -11,11 +11,8 @@ $app->get('/{className}[/[{id}]]', function (Request $request, Response $respons
     $currentTable = new $className();
     $array = $id != null ? $currentTable->select($id) : $currentTable->selectAll();
     
-    echo "<pre>";
-	print_r($array);
-	print_r($currentTable->Translate($array));
-    print_r(json_encode($currentTable->Translate($array), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-    echo "</pre>";
+    $json = json_encode($array, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    print_r($json);
 });
 
 $app->post('/{className}/add', function (Request $request, Response $response) {

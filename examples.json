@@ -7,12 +7,12 @@
 		"processor": "",
 		"domain_name": "",
 		"comment": "",
-		"MAC": ""
-	},
-	"PC_Video_Outputs":[
-		"1",
-		"2"
-	]
+		"MAC": "",
+		"Video_Outputs":[
+			"1",
+			"2"
+		]
+	}
 }
 
 //Monitor
@@ -21,11 +21,11 @@
 		"id": "",
 		"diagonal": "",
 		"name": "",
-		"comment": ""
-	},
-	"Monitor_Video_Outputs":[
-		"1"
-	]
+		"comment": "",
+		"Video_Outputs":[
+			"1"
+		]
+	}
 }
 
 //Headphone
@@ -41,17 +41,17 @@
 {
 	"Workspace":{
 		"id": "",
-		"comment": ""
-	},
-	"Workspace_PCs":[
-		"1", 
-		"2"
-	],
-	"Workspace_Monitors":[
-		"2"
-	],
-	"Workspace_Headphones":[
-		"1",
-		"2"
-	]
+		"comment": "",
+		"PCs":[
+			"1", 
+			"2"
+		],
+		"Monitors":[
+			"2"
+		],
+		"Headphones":[
+			"1",
+			"2"
+		]
+	}
 }

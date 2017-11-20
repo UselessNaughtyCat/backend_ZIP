@@ -93,25 +93,44 @@ class Table
 				$tablelink .= $this->name.'.id = '.$id;
 
 				$sql = "SELECT $variables FROM $tablejoin ON $tablelink";
-				// echo $sql.'<br>';
-				// return $sql;
 				$result = $this->dbconn->query($sql);
 				$tmpmain = $result->fetchAll(PDO::FETCH_ASSOC);
 
-				$tmpmain = $this->removeExcept($tmpmain);
-				$tmpmain = $this->mergeArray($tmpmain, $this->merge);
+				if (count($tmpmain) === 0){
+					$variables = '';
+					$result = $this->dbconn->query("DESCRIBE $this->name");
+					$arr = $result->fetchAll(PDO::FETCH_ASSOC);
+					foreach ($arr as $arrkey => $tmparr) {
+						foreach ($tmparr as $tmparraykey => $value) {
+							if ($tmparraykey == 'Field'){
+								$variables .= "$this->name.$value AS '$this->name.$value', ";
+							}
+						}
+					}
+					$variables = rtrim($variables, ', ');
+
+					$sql = "SELECT $variables FROM $this->name WHERE id = $id";
+					$result = $this->dbconn->query($sql);
+					$tmpmain = $result->fetchAll(PDO::FETCH_ASSOC);
+
+					$tmpmain = $this->removeExcept($tmpmain);
+				}
+				else{
+					$tmpmain = $this->removeExcept($tmpmain);
+					$tmpmain = $this->mergeArray($tmpmain, $this->merge);
+				}
 
 				$array[] = $tmpmain;
 			}
 
 			if (count($array) == 1){
-				return $array[0][0];
+				return $this->translate($array[0][0]);
 			}
 			else{
 				for ($i = 0; $i < count($array); $i++) { 
 					$array[$i] = $array[$i][0];
 				}
-				return $array;
+				return $this->translate($array);
 			}
 		}
 		else
@@ -134,33 +153,16 @@ class Table
 
 			$array = $this->removeExcept($array);
 
-			return $array[0];
+			return $this->translate($array[0]);
 		}
-	}
-
-	public function Translate($array)
-	{
-		$strkey = '';
-		$new = [];
-		foreach ($array as $key => $value) {
-			$tmpkey = explode('.', $key)[0];
-			$tmpfiled = explode('.', $key)[1];
-			if ($strkey !== $tmpkey){
-				$strkey = $tmpkey;
-			}
-			if (!(is_array($value))){
-				$new[$strkey][$tmpfiled] = $value;
-			}
-			else{
-				$new[$strkey] = $value;
-			}
-		}
-		
-		return $new;
 	}
 
 	public function insert($values)
 	{
+		$values = $this->linksOut($values);
+
+		// print_r($values);
+		
 		foreach ($values as $key => $value) {
 			$arr = $value;
 			if (isAssoc($arr)){
@@ -181,14 +183,14 @@ class Table
 				for ($i = 0; $i < count($avaliable_fields); $i++){
 					foreach ($avaliable_fields[$i] as $k => $v) {
 						if ($k == 'Field'){
-							$values .= $arr[$v] !== '' ? "'".$arr[$v]."', " : 'null, ';
+							$values .= $arr[$v] !== null ? "'".$arr[$v]."', " : 'null, ';
 						}
 					}
 				}
 				$values = rtrim($values, ', ');
 
 				$sql = "INSERT INTO $key ($fields) VALUES ($values)";
-				echo $sql."\n";
+				// echo $sql."\n";
 				$this->dbconn->query($sql);
 			}
 			else{
@@ -213,15 +215,18 @@ class Table
 					$values = "null, $max_id, ".$arr[$a];
 
 					$sql = "INSERT INTO $key ($fields) VALUES ($values)";
-					echo $sql."\n";
+					// echo $sql."\n";
 					$this->dbconn->query($sql);
 				}
 			}
 		}
+		
 	}
 
 	public function update($id, $values)
 	{
+		$values = $this->linksOut($values);
+
 		foreach ($values as $key => $value) {
 			$arr = $value;
 
@@ -241,7 +246,7 @@ class Table
 				
 				$sql = rtrim($sql, ', ') . " WHERE id = $id";
 
-				//echo $sql."\n";
+				// echo $sql."\n";
 				$this->dbconn->query($sql);
 			}
 			else{
@@ -266,8 +271,7 @@ class Table
 					$values = "null, $id, ".$arr[$a];
 
 					$sql = "INSERT INTO $key ($fields) VALUES ($values)";
-					//echo $sql."\n";
-
+					// echo $sql."\n";
 					$this->dbconn->query($sql);
 				}
 			}
@@ -318,6 +322,115 @@ class Table
 				unset($array[$i]);
 			}
 		}
+		return $array;
+	}
+
+	private function translate($array)
+	{
+		$new = [];
+		if (is_array($array[0])){
+			$new = $this->translateMultidimentional($array);
+		}
+		else{
+			$new = $this->translateArray($array);
+		}
+
+		$mainkey = '';
+		foreach ($new as $key => $value) {
+			if ($mainkey !== $this->name){
+				$mainkey = $this->name;
+			}
+			if ($key !== $mainkey){
+				$new[$mainkey][ str_replace($this->name.'_', '',  $key)] = $new[$key];
+				unset($new[$key]);
+			}
+		}
+
+		return $new;
+	}
+
+	private function translateArray($array)
+	{
+		$arrcount = 0;
+		$innerarrcount = 0;
+
+		foreach ($array as $key => $value) {
+			if (is_array($value)){
+				$arrcount += 1;
+				if (count($value) > $innerarrcount){
+					$innerarrcount = count($value); 
+				}
+			}
+		}
+
+		$new = [];
+		$strkey = '';
+		for ($i = 0; $i < ($innerarrcount > 0 ? $innerarrcount : 1); $i++) { 
+			foreach ($array as $key => $value) {				
+				$tmpkey = explode('.', $key)[0];
+				$tmpfiled = explode('.', $key)[1];
+				if ($strkey !== $tmpkey){
+					$strkey = $tmpkey;
+				}
+				if (is_array($value)){
+					$strlinkkey = '';
+					foreach ($this->links as $k => $v) {
+						if (strpos($k, $tmpkey) > -1){
+							$strlinkkey = $k;
+						}
+					}
+					if ($strlinkkey !== ''){
+						$strkey = $strlinkkey;
+					}
+
+					if ($arrcount > 1){
+						$new[$strkey][$i][$tmpfiled] = $value[$i];
+					}
+					else{
+						$new[$strkey] = $value;
+					}
+
+					$strlinkkey = $strkey;
+				}
+				else{
+					$new[$strkey][$tmpfiled] = $value;
+				}
+			}
+		}
+
+		return $new;
+	}
+
+	private function translateMultidimentional($array)
+	{
+		$new = [];
+		for ($i = 0; $i < count($array); $i++) { 
+			$new[] = $this->translateArray($array[$i]);
+		}
+
+		for ($i = 1; $i < count($new); $i++) { 
+			if ($new[0][$this->name] === $new[$i][$this->name]){
+				unset($new[$i][$this->name]);
+				$new[0] = array_merge($new[0], $new[$i]);
+			}
+		}
+
+		return $new[0];
+	}
+
+	private function linksOut($array)
+	{
+		foreach ($array as $arrayKey => $inner) {
+			foreach ($inner as $innerKey => $value) {
+				foreach ($this->links as $key => $val) {
+					if (strpos($key, $innerKey)){
+						$array[$key] = $value;
+						unset($array[$arrayKey][$innerKey]);
+					}
+				}
+			}
+		}
+
 		return $array;
 	}
 }
