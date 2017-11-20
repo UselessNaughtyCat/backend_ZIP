@@ -16,4 +16,18 @@ class PC extends Table
 	protected $merge = [
 		'Video_Output.name',
 	];
+
+	protected function beforeUpdate($array)
+	{
+		foreach ($array['PC_Video_Outputs'] as $key => $value) {
+			// echo $value;
+			$max_id = $this->dbconn->query("SELECT id FROM Video_Output WHERE name = '$value'");
+			$max_id = $max_id->fetchAll(PDO::FETCH_NUM)[0][0];
+
+			$array['PC_Video_Outputs'][$key] = $max_id;
+			// print_r($max_id);
+		}
+
+		return $array;
+	}
 }

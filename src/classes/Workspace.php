@@ -18,7 +18,10 @@ class Workspace extends Table
 		'Workspace_Monitors.Monitor_id',
 		'Workspace_Headphones.id',
 		'Workspace_Headphones.Workspace_id',
-		'Workspace_Headphones.Headphone_id',
+		'Workspace_Headphones.Headphone_id',                 
+		// 'PC.id',
+		// 'Monitor.id',
+		// 'Headphone.id',
 	];
 	protected $merge = [
 		'Headphone.id',

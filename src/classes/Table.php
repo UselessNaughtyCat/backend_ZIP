@@ -160,6 +160,7 @@ class Table
 	public function insert($values)
 	{
 		$values = $this->linksOut($values);
+		$values = $this->beforeUpdate($values);
 
 		// print_r($values);
 		
@@ -226,6 +227,7 @@ class Table
 	public function update($id, $values)
 	{
 		$values = $this->linksOut($values);
+		$values = $this->beforeUpdate($values);
 
 		foreach ($values as $key => $value) {
 			$arr = $value;
@@ -285,6 +287,11 @@ class Table
 
 		$sql = "DELETE FROM $this->name WHERE id = $id";
 		$this->dbconn->query($sql);
+	}
+
+	protected function beforeUpdate($array)
+	{
+		return $array;
 	}
 
 	private function removeExcept($array)

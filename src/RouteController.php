@@ -10,9 +10,8 @@ $app->get('/{className}[/[{id}]]', function (Request $request, Response $respons
 
     $currentTable = new $className();
     $array = $id != null ? $currentTable->select($id) : $currentTable->selectAll();
-    
-    $json = json_encode($array, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-    print_r($json);
+
+    return $response->withJson(json_encode($array));
 });
 
 $app->post('/{className}/add', function (Request $request, Response $response) {
