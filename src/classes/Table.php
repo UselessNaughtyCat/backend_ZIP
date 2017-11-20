@@ -49,112 +49,54 @@ class Table
 	{
 		if (count($this->links) > 0)
 		{
-			$array = [];
+			$array[$this->name] = $this->simpleSelect($this->name, $id, null, false)[0];
+			$linksArray = [];
 			foreach ($this->links as $key => $links) {
-				require '../src/classes/SQL_Query_Linked_Tables.php';
-				$sql = str_replace("{db_name}", $this->dbname, $sql);
-				$sql .= " AND `TABLE_NAME` = '$key'";
-				$result = $this->dbconn->query($sql);
-				$linkedtables = $result->fetchAll(PDO::FETCH_ASSOC);
-				$tmpmain = [];
-	
-				$tables = [];			
-				$tables[] = $key;
-				foreach ($links as $v) {
-					$tables[] = $v;
-				}
-				$variables = '';
-				foreach ($tables as $tablekey => $table) {
-					$result = $this->dbconn->query("DESCRIBE $table");
-					$arr = $result->fetchAll(PDO::FETCH_ASSOC);
-					foreach ($arr as $arrkey => $tmparr) {
-						foreach ($tmparr as $tmparrkey => $value) {
-							if ($tmparrkey == 'Field'){
-								$variables .= "$table.$value AS '$table.$value', ";
+				$linkTable = $this->simpleSelect($key, null, $this->name.'_id = '.$id, false);
+
+				for ($i=0; $i < count($linkTable); $i++) { 
+					foreach ($linkTable[$i] as $linkKey => $linkVal) {
+						$refID = null;
+						$refName = null;
+						for ($j = 0; $j < count($links); $j++) { 
+							if (strpos($linkKey, $links[$j]) > -1){
+								$sub = substr($links[$j], strpos($linkKey, $links[$j]));
+							}
+							if ($sub != null && $sub !== $this->name){
+								$refID = $linkVal;
+								$refName = $sub;
+							}
+							$sub = '';
+							if ($refID != null && $refName != null){
+								$linkTable[$i] = $this->simpleSelect($refName, $refID, null, false)[0];
 							}
 						}
 					}
 				}
-				$variables = rtrim($variables, ', ');
-
-				$tablejoin = $key.' ';
-				foreach ($links as $value) {
-					$tablejoin .= 'INNER JOIN '.$value.' ';
-				}
-
-				$tablelink = '';
-				foreach ($linkedtables as $k => $value) {
-					$tablelink .= $value['TABLE_NAME'].'.'.
-								  $value['COLUMN_NAME'].' = '.
-								  $value['REFERENCED_TABLE_NAME'].'.'.
-								  $value['REFERENCED_COLUMN_NAME'].' AND ';
-				}
-
-				$tablelink .= $this->name.'.id = '.$id;
-
-				$sql = "SELECT $variables FROM $tablejoin ON $tablelink";
-				$result = $this->dbconn->query($sql);
-				$tmpmain = $result->fetchAll(PDO::FETCH_ASSOC);
-
-				if (count($tmpmain) === 0){
-					$variables = '';
-					$result = $this->dbconn->query("DESCRIBE $this->name");
-					$arr = $result->fetchAll(PDO::FETCH_ASSOC);
-					foreach ($arr as $arrkey => $tmparr) {
-						foreach ($tmparr as $tmparraykey => $value) {
-							if ($tmparraykey == 'Field'){
-								$variables .= "$this->name.$value AS '$this->name.$value', ";
-							}
-						}
+				
+				for ($i = 0; $i < count($linkTable); $i++) { 
+					if (count($linkTable[$i]) > 1){
+						continue;
 					}
-					$variables = rtrim($variables, ', ');
-
-					$sql = "SELECT $variables FROM $this->name WHERE id = $id";
-					$result = $this->dbconn->query($sql);
-					$tmpmain = $result->fetchAll(PDO::FETCH_ASSOC);
-
-					$tmpmain = $this->removeExcept($tmpmain);
+					foreach ($linkTable[$i] as $value) {
+						$linkTable[$i] = $value;
+					}
 				}
-				else{
-					$tmpmain = $this->removeExcept($tmpmain);
-					$tmpmain = $this->mergeArray($tmpmain, $this->merge);
+				if (count($linkTable) > 0){
+					$linksArray[str_replace($this->name.'_', "", $key)] = $linkTable;
 				}
-
-				$array[] = $tmpmain;
 			}
-
-			if (count($array) == 1){
-				return $this->translate($array[0][0]);
+			foreach ($linksArray as $key => $value) {
+				$array[$this->name][$key] = $value;
 			}
-			else{
-				for ($i = 0; $i < count($array); $i++) { 
-					$array[$i] = $array[$i][0];
-				}
-				return $this->translate($array);
-			}
+			// print_r($array);
 		}
 		else
 		{			
-			$variables = '';
-			$result = $this->dbconn->query("DESCRIBE $this->name");
-			$arr = $result->fetchAll(PDO::FETCH_ASSOC);
-			foreach ($arr as $arrkey => $tmparr) {
-				foreach ($tmparr as $tmparraykey => $value) {
-					if ($tmparraykey == 'Field'){
-						$variables .= "$this->name.$value AS '$this->name.$value', ";
-					}
-				}
-			}
-			$variables = rtrim($variables, ', ');
-
-			$sql = "SELECT $variables FROM $this->name WHERE id = $id";
-			$result = $this->dbconn->query($sql);
-			$array = $result->fetchAll(PDO::FETCH_ASSOC);
-
-			$array = $this->removeExcept($array);
-
-			return $this->translate($array[0]);
+			$array[$this->name] = $this->simpleSelect($this->name, $id, null, false)[0];
+			// print_r($array);
 		}
+		return $array;
 	}
 
 	public function insert($values)
@@ -166,7 +108,7 @@ class Table
 		
 		foreach ($values as $key => $value) {
 			$arr = $value;
-			if (isAssoc($arr)){
+			if ($this->isAssoc($arr)){
 				$avaliable_fields = $this->dbconn->query("DESCRIBE $key");
 				$avaliable_fields = $avaliable_fields->fetchAll(PDO::FETCH_ASSOC);
 
@@ -235,7 +177,7 @@ class Table
 			$avaliable_fields = $this->dbconn->query("DESCRIBE $key");
 			$avaliable_fields = $avaliable_fields->fetchAll(PDO::FETCH_ASSOC);
 
-			if (isAssoc($arr)){
+			if ($this->isAssoc($arr)){
 
 				$sql = "UPDATE $key SET ";
 				for($i = 1; $i < count($avaliable_fields); $i++){
@@ -294,8 +236,40 @@ class Table
 		return $array;
 	}
 
-	private function removeExcept($array)
+	private function simpleSelect($table, $id = null, $condition = null, $isFullName = true)
 	{
+		$variables = '';
+		if ($isFullName){
+			$result = $this->dbconn->query("DESCRIBE $table");
+			$arr = $result->fetchAll(PDO::FETCH_ASSOC);
+			foreach ($arr as $arrkey => $tmparr) {
+				foreach ($tmparr as $tmparraykey => $value) {
+					if ($tmparraykey == 'Field'){
+						$variables .= "$table.$value AS '$table.$value', ";
+					}
+				}
+			}
+			$variables = rtrim($variables, ', ');
+		}
+		else{
+			$variables = "*";
+		}
+
+		if ($id != null) {
+			$conditions = "WHERE id = $id";
+		}
+		elseif ($condition != null) {
+			$conditions = "WHERE $condition";
+		}
+		else {
+			$conditions = '';
+		}
+
+		$sql = "SELECT $variables FROM $table $conditions";
+		// echo $sql."\n";
+		$result = $this->dbconn->query($sql);
+		$array = $result->fetchAll(PDO::FETCH_ASSOC);
+
 		foreach ($array as $arrkey => $tmparr) {
 			foreach ($tmparr as $tmparrkey => $val) {
 				foreach ($this->except as $exckey => $excval) {
@@ -306,123 +280,22 @@ class Table
 			}
 		}
 
-		return $array;
-	}
-
-	private function mergeArray($array, $merged)
-	{
-		if (count($merged) > 0){
-			foreach ($merged as $mergedkey => $mergedvalue) {
-				$tmpmerged = [];
-				foreach ($array as $arrkey => $innerarr) {
-					foreach ($innerarr as $innerkey => $innerval) {
-						if ($mergedvalue == $innerkey){
-							$tmpmerged[] = $innerval;
+		if (!$isFullName){
+			foreach ($this->except as $oneExcept) {
+				if (strpos($oneExcept, $table) > -1){
+					$strOneExcept = str_replace($table.'.', '', $oneExcept);
+					for ($i = 0; $i < count($array); $i++) { 
+						foreach ($array[$i] as $key => $value) {
+							if ($key === $strOneExcept){
+								unset($array[$i][$key]);
+							}
 						}
 					}
 				}
-				if (count($tmpmerged) > 0){
-					$array[0][$mergedvalue] = $tmpmerged;
-				}
-			}
-			for ($i = 1; $i < count($array[0]); $i++) { 
-				unset($array[$i]);
 			}
 		}
+
 		return $array;
-	}
-
-	private function translate($array)
-	{
-		$new = [];
-		if (is_array($array[0])){
-			$new = $this->translateMultidimentional($array);
-		}
-		else{
-			$new = $this->translateArray($array);
-		}
-
-		$mainkey = '';
-		foreach ($new as $key => $value) {
-			if ($mainkey !== $this->name){
-				$mainkey = $this->name;
-			}
-			if ($key !== $mainkey){
-				$new[$mainkey][ str_replace($this->name.'_', '',  $key)] = $new[$key];
-				unset($new[$key]);
-			}
-		}
-
-		return $new;
-	}
-
-	private function translateArray($array)
-	{
-		$arrcount = 0;
-		$innerarrcount = 0;
-
-		foreach ($array as $key => $value) {
-			if (is_array($value)){
-				$arrcount += 1;
-				if (count($value) > $innerarrcount){
-					$innerarrcount = count($value); 
-				}
-			}
-		}
-
-		$new = [];
-		$strkey = '';
-		for ($i = 0; $i < ($innerarrcount > 0 ? $innerarrcount : 1); $i++) { 
-			foreach ($array as $key => $value) {				
-				$tmpkey = explode('.', $key)[0];
-				$tmpfiled = explode('.', $key)[1];
-				if ($strkey !== $tmpkey){
-					$strkey = $tmpkey;
-				}
-				if (is_array($value)){
-					$strlinkkey = '';
-					foreach ($this->links as $k => $v) {
-						if (strpos($k, $tmpkey) > -1){
-							$strlinkkey = $k;
-						}
-					}
-					if ($strlinkkey !== ''){
-						$strkey = $strlinkkey;
-					}
-
-					if ($arrcount > 1){
-						$new[$strkey][$i][$tmpfiled] = $value[$i];
-					}
-					else{
-						$new[$strkey] = $value;
-					}
-
-					$strlinkkey = $strkey;
-				}
-				else{
-					$new[$strkey][$tmpfiled] = $value;
-				}
-			}
-		}
-
-		return $new;
-	}
-
-	private function translateMultidimentional($array)
-	{
-		$new = [];
-		for ($i = 0; $i < count($array); $i++) { 
-			$new[] = $this->translateArray($array[$i]);
-		}
-
-		for ($i = 1; $i < count($new); $i++) { 
-			if ($new[0][$this->name] === $new[$i][$this->name]){
-				unset($new[$i][$this->name]);
-				$new[0] = array_merge($new[0], $new[$i]);
-			}
-		}
-
-		return $new[0];
 	}
 
 	private function linksOut($array)
@@ -440,23 +313,9 @@ class Table
 
 		return $array;
 	}
-}
-
-function array_keys_to_values($array)
-{
-	$new = [];
-	foreach ($array as $k => $v) {
-		$new[] = $k;
-	}		
-	foreach ($array as $k => $tmp) {
-		foreach ($tmp as $k1 => $v) {
-			$new[] = $v;
-		}
+	private function isAssoc(array $arr)
+	{
+	    if (array() === $arr) return false;
+	    return array_keys($arr) !== range(0, count($arr) - 1);
 	}
-	return $new;
-}
-function isAssoc(array $arr)
-{
-    if (array() === $arr) return false;
-    return array_keys($arr) !== range(0, count($arr) - 1);
 }
