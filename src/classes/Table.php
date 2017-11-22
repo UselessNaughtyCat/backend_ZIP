@@ -141,6 +141,9 @@ class Table
 					$max_id = $this->dbconn->query("SELECT MAX(id) FROM $this->name");
 					$max_id = $max_id->fetchAll(PDO::FETCH_NUM)[0][0];
 					// echo $this->name."\n".$max_id."\n";
+					if ($max_id == null){
+						$max_id = 1;
+					}
 
 					$avaliable_fields = $this->dbconn->query("DESCRIBE $key");
 					$avaliable_fields = $avaliable_fields->fetchAll(PDO::FETCH_ASSOC);
