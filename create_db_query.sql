@@ -15,7 +15,6 @@ CREATE TABLE `Monitor` (
 	`id` int NOT NULL AUTO_INCREMENT,
 	`diagonal` int NOT NULL,
 	`name` varchar(250) NOT NULL,
-	`video_output` varchar(250) NOT NULL,
 	`comment` TEXT,
 	PRIMARY KEY (`id`)
 );
